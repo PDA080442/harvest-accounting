@@ -20,6 +20,23 @@ class HarvestApp(tk.Tk):
     добавлять их в список и рассчитывать общий урожай за сезон.
     """
     
+    # Современная цветовая палитра
+    COLORS = {
+        'bg_main': '#F8F9FA',           # Светло-серый фон
+        'bg_card': '#FFFFFF',           # Белый для карточек
+        'bg_input': '#FFFFFF',          # Белый для полей ввода
+        'accent_green': '#28A745',      # Зеленый для добавления
+        'accent_blue': '#007BFF',       # Синий для расчетов
+        'accent_red': '#DC3545',        # Красный для удаления
+        'accent_orange': '#FF6B35',    # Оранжевый для итогов
+        'text_primary': '#212529',      # Темный текст
+        'text_secondary': '#6C757D',    # Серый текст
+        'border': '#DEE2E6',            # Светлая граница
+        'hover_green': '#218838',
+        'hover_blue': '#0056B3',
+        'hover_red': '#C82333',
+    }
+    
     def __init__(self):
         """Инициализация главного окна приложения."""
         super().__init__()
@@ -31,124 +48,261 @@ class HarvestApp(tk.Tk):
     
     def _setup_window(self) -> None:
         """Настройка параметров окна."""
-        self.title("Учет урожая")
-        self.geometry("700x600")
+        self.title("🌾 Учет урожая")
+        self.geometry("850x750")
         self.resizable(True, True)
+        self.configure(bg=self.COLORS['bg_main'])
         
         # Центрирование окна
         self.update_idletasks()
-        width = self.winfo_width()
-        height = self.winfo_height()
+        width = 850
+        height = 750
         x = (self.winfo_screenwidth() // 2) - (width // 2)
         y = (self.winfo_screenheight() // 2) - (height // 2)
         self.geometry(f'{width}x{height}+{x}+{y}')
     
+    def _create_styled_button(self, parent, text, command, color, hover_color):
+        """Создание стилизованной кнопки с эффектом hover."""
+        btn = tk.Button(
+            parent,
+            text=text,
+            command=command,
+            bg=color,
+            fg="black",
+            font=("Segoe UI", 10, "bold"),
+            relief=tk.FLAT,
+            cursor="hand2",
+            bd=0,
+            padx=20,
+            pady=10,
+            activebackground=hover_color,
+            activeforeground="black"
+        )
+        
+        # Эффект hover
+        def on_enter(e):
+            btn['bg'] = hover_color
+        
+        def on_leave(e):
+            btn['bg'] = color
+        
+        btn.bind("<Enter>", on_enter)
+        btn.bind("<Leave>", on_leave)
+        
+        return btn
+    
+    def _create_card(self, parent):
+        """Создание карточки с тенью (визуальный эффект через рамку)."""
+        card = tk.Frame(
+            parent,
+            bg=self.COLORS['bg_card'],
+            relief=tk.FLAT,
+            bd=1,
+            highlightbackground=self.COLORS['border'],
+            highlightthickness=1
+        )
+        return card
+    
     def _create_widgets(self) -> None:
         """Создание и размещение виджетов интерфейса."""
-        # Заголовок
+        # Главный контейнер
+        main_container = tk.Frame(self, bg=self.COLORS['bg_main'])
+        main_container.pack(fill=tk.BOTH, expand=True, padx=25, pady=25)
+        
+        # ========== ЗАГОЛОВОК ==========
+        header_frame = tk.Frame(main_container, bg=self.COLORS['bg_main'])
+        header_frame.pack(fill=tk.X, pady=(0, 25))
+        
         title_label = tk.Label(
-            self,
-            text="Учет урожая культур",
-            font=("Arial", 16, "bold"),
-            pady=10
+            header_frame,
+            text="🌾 Учет урожая культур",
+            font=("Segoe UI", 28, "bold"),
+            fg=self.COLORS['text_primary'],
+            bg=self.COLORS['bg_main'],
+            pady=5
         )
         title_label.pack()
         
-        # Фрейм для полей ввода
-        input_frame = ttk.LabelFrame(self, text="Ввод данных о культуре", padding=10)
-        input_frame.pack(fill=tk.X, padx=10, pady=5)
-        
-        # Поле ввода: Название культуры
-        name_frame = ttk.Frame(input_frame)
-        name_frame.pack(fill=tk.X, pady=5)
-        tk.Label(name_frame, text="Название культуры:", width=20, anchor="w").pack(side=tk.LEFT)
-        self.name_entry = tk.Entry(name_frame, width=30)
-        self.name_entry.pack(side=tk.LEFT, padx=5)
-        
-        # Поле ввода: Площадь посева
-        area_frame = ttk.Frame(input_frame)
-        area_frame.pack(fill=tk.X, pady=5)
-        tk.Label(area_frame, text="Площадь посева (га):", width=20, anchor="w").pack(side=tk.LEFT)
-        self.area_entry = tk.Entry(area_frame, width=30)
-        self.area_entry.pack(side=tk.LEFT, padx=5)
-        
-        # Поле ввода: Урожайность
-        yield_frame = ttk.Frame(input_frame)
-        yield_frame.pack(fill=tk.X, pady=5)
-        tk.Label(yield_frame, text="Урожайность (т/га):", width=20, anchor="w").pack(side=tk.LEFT)
-        self.yield_entry = tk.Entry(yield_frame, width=30)
-        self.yield_entry.pack(side=tk.LEFT, padx=5)
-        
-        # Фрейм для кнопок
-        button_frame = ttk.Frame(self)
-        button_frame.pack(pady=10)
-        
-        # Кнопка "Добавить культуру"
-        add_button = tk.Button(
-            button_frame,
-            text="Добавить культуру",
-            command=self._add_crop,
-            bg="#4CAF50",
-            fg="white",
-            font=("Arial", 10),
-            width=18,
-            height=2
+        subtitle_label = tk.Label(
+            header_frame,
+            text="Введите данные о культурах и рассчитайте общий урожай за сезон",
+            font=("Segoe UI", 11),
+            fg=self.COLORS['text_secondary'],
+            bg=self.COLORS['bg_main'],
+            pady=3
         )
-        add_button.pack(side=tk.LEFT, padx=5)
+        subtitle_label.pack()
         
-        # Кнопка "Рассчитать общий урожай"
-        calculate_button = tk.Button(
-            button_frame,
-            text="Рассчитать общий урожай",
-            command=self._calculate_total,
-            bg="#2196F3",
-            fg="white",
-            font=("Arial", 10),
-            width=18,
-            height=2
+        # ========== КАРТОЧКА ВВОДА ДАННЫХ ==========
+        input_card = self._create_card(main_container)
+        input_card.pack(fill=tk.X, pady=(0, 20))
+        
+        input_inner = tk.Frame(input_card, bg=self.COLORS['bg_card'])
+        input_inner.pack(fill=tk.BOTH, padx=30, pady=25)
+        
+        # Заголовок секции
+        section_title = tk.Label(
+            input_inner,
+            text="Ввод данных о культуре",
+            font=("Segoe UI", 14, "bold"),
+            fg=self.COLORS['text_primary'],
+            bg=self.COLORS['bg_card'],
+            anchor="w"
         )
-        calculate_button.pack(side=tk.LEFT, padx=5)
+        section_title.pack(fill=tk.X, pady=(0, 20))
         
-        # Кнопка "Очистить список"
-        clear_button = tk.Button(
-            button_frame,
-            text="Очистить список",
-            command=self._clear_list,
-            bg="#f44336",
-            fg="white",
-            font=("Arial", 10),
-            width=18,
-            height=2
+        # Поле: Название культуры
+        self._create_input_field(
+            input_inner,
+            "Название культуры:",
+            "name_entry"
         )
-        clear_button.pack(side=tk.LEFT, padx=5)
         
-        # Фрейм для списка культур
-        list_frame = ttk.LabelFrame(self, text="Список культур", padding=10)
-        list_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=5)
+        # Поле: Площадь посева
+        self._create_input_field(
+            input_inner,
+            "Площадь посева (га):",
+            "area_entry"
+        )
         
-        # Scrollbar для списка
-        scrollbar = tk.Scrollbar(list_frame)
+        # Поле: Урожайность
+        self._create_input_field(
+            input_inner,
+            "Урожайность (т/га):",
+            "yield_entry"
+        )
+        
+        # ========== КНОПКИ ДЕЙСТВИЙ ==========
+        button_frame = tk.Frame(main_container, bg=self.COLORS['bg_main'])
+        button_frame.pack(pady=20)
+        
+        add_btn = self._create_styled_button(
+            button_frame,
+            "➕ Добавить культуру",
+            self._add_crop,
+            self.COLORS['accent_green'],
+            self.COLORS['hover_green']
+        )
+        add_btn.pack(side=tk.LEFT, padx=8)
+        
+        calc_btn = self._create_styled_button(
+            button_frame,
+            "📊 Рассчитать урожай",
+            self._calculate_total,
+            self.COLORS['accent_blue'],
+            self.COLORS['hover_blue']
+        )
+        calc_btn.pack(side=tk.LEFT, padx=8)
+        
+        clear_btn = self._create_styled_button(
+            button_frame,
+            "🗑️ Очистить список",
+            self._clear_list,
+            self.COLORS['accent_red'],
+            self.COLORS['hover_red']
+        )
+        clear_btn.pack(side=tk.LEFT, padx=8)
+        
+        # ========== КАРТОЧКА СПИСКА КУЛЬТУР ==========
+        list_card = self._create_card(main_container)
+        list_card.pack(fill=tk.BOTH, expand=True, pady=(0, 20))
+        
+        list_inner = tk.Frame(list_card, bg=self.COLORS['bg_card'])
+        list_inner.pack(fill=tk.BOTH, expand=True, padx=30, pady=25)
+        
+        # Заголовок списка
+        list_title = tk.Label(
+            list_inner,
+            text="Список культур",
+            font=("Segoe UI", 14, "bold"),
+            fg=self.COLORS['text_primary'],
+            bg=self.COLORS['bg_card'],
+            anchor="w"
+        )
+        list_title.pack(fill=tk.X, pady=(0, 15))
+        
+        # Контейнер для списка
+        listbox_container = tk.Frame(list_inner, bg=self.COLORS['bg_card'])
+        listbox_container.pack(fill=tk.BOTH, expand=True)
+        
+        # Scrollbar
+        scrollbar = tk.Scrollbar(
+            listbox_container,
+            bg=self.COLORS['bg_input'],
+            troughcolor=self.COLORS['bg_main'],
+            activebackground=self.COLORS['accent_blue'],
+            width=14,
+            relief=tk.FLAT
+        )
         scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
         
-        # Listbox для отображения культур
+        # Listbox
         self.crops_listbox = tk.Listbox(
-            list_frame,
+            listbox_container,
             yscrollcommand=scrollbar.set,
-            font=("Courier", 10),
-            height=10
+            font=("Consolas", 10),
+            height=12,
+            bg=self.COLORS['bg_input'],
+            fg=self.COLORS['text_primary'],
+            selectbackground=self.COLORS['accent_blue'],
+            selectforeground="white",
+            relief=tk.FLAT,
+            bd=1,
+            highlightthickness=1,
+            highlightbackground=self.COLORS['border'],
+            activestyle='none'
         )
         self.crops_listbox.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         scrollbar.config(command=self.crops_listbox.yview)
         
-        # Метка для отображения общего урожая
+        # ========== ИТОГОВАЯ ИНФОРМАЦИЯ ==========
+        total_frame = tk.Frame(main_container, bg=self.COLORS['bg_main'])
+        total_frame.pack(fill=tk.X, pady=10)
+        
         self.total_label = tk.Label(
-            self,
-            text="Общий урожай за сезон: 0.00 т",
-            font=("Arial", 12, "bold"),
-            fg="#2196F3",
-            pady=10
+            total_frame,
+            text="🌾 Общий урожай за сезон: 0.00 т",
+            font=("Segoe UI", 16, "bold"),
+            fg=self.COLORS['accent_orange'],
+            bg=self.COLORS['bg_main'],
+            pady=8
         )
         self.total_label.pack()
+    
+    def _create_input_field(self, parent, label_text, entry_attr):
+        """Создание поля ввода с меткой."""
+        field_frame = tk.Frame(parent, bg=self.COLORS['bg_card'])
+        field_frame.pack(fill=tk.X, pady=10)
+        
+        # Метка
+        label = tk.Label(
+            field_frame,
+            text=label_text,
+            font=("Segoe UI", 10),
+            fg=self.COLORS['text_primary'],
+            bg=self.COLORS['bg_card'],
+            width=22,
+            anchor="w"
+        )
+        label.pack(side=tk.LEFT)
+        
+        # Поле ввода
+        entry = tk.Entry(
+            field_frame,
+            font=("Segoe UI", 11),
+            relief=tk.FLAT,
+            bd=1,
+            bg=self.COLORS['bg_input'],
+            fg=self.COLORS['text_primary'],
+            highlightthickness=1,
+            highlightbackground=self.COLORS['border'],
+            highlightcolor=self.COLORS['accent_blue'],
+            insertbackground=self.COLORS['accent_blue']
+        )
+        entry.pack(side=tk.LEFT, padx=(10, 0), ipadx=10, ipady=8, fill=tk.X, expand=True)
+        
+        # Сохранение ссылки на поле ввода
+        setattr(self, entry_attr, entry)
     
     def _validate_input(self) -> tuple[bool, str, float, float]:
         """
@@ -202,8 +356,13 @@ class HarvestApp(tk.Tk):
             # Добавление в список
             self.crops.append(crop)
             
-            # Добавление в Listbox
-            crop_info = f"{crop.name}: {crop.area} га × {crop.yield_per_hectare} т/га = {crop.total_harvest:.2f} т"
+            # Форматирование для отображения
+            crop_info = (
+                f"{crop.name:20s} │ "
+                f"{crop.area:>7.2f} га × "
+                f"{crop.yield_per_hectare:>6.2f} т/га = "
+                f"{crop.total_harvest:>8.2f} т"
+            )
             self.crops_listbox.insert(tk.END, crop_info)
             
             # Очистка полей ввода
@@ -230,7 +389,7 @@ class HarvestApp(tk.Tk):
         
         # Обновление метки
         self.total_label.config(
-            text=f"Общий урожай за сезон: {total_harvest:.2f} т"
+            text=f"🌾 Общий урожай за сезон: {total_harvest:.2f} т"
         )
         
         messagebox.showinfo(
@@ -248,6 +407,5 @@ class HarvestApp(tk.Tk):
         if messagebox.askyesno("Подтверждение", "Вы уверены, что хотите очистить весь список?"):
             self.crops.clear()
             self.crops_listbox.delete(0, tk.END)
-            self.total_label.config(text="Общий урожай за сезон: 0.00 т")
+            self.total_label.config(text="🌾 Общий урожай за сезон: 0.00 т")
             messagebox.showinfo("Успех", "Список очищен!")
-
